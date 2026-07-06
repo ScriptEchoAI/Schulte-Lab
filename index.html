@@ -3,76 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Schulte Lab | 专注力巅峰训练</title>
+    <title>Schulte Lab | 实时对战实验室</title>
+    <!-- 引入 Firebase 核心库 -->
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database-compat.js"></script>
     <style>
         :root {
-            --bg-page: #FDFBF7; 
-            --primary: #4A69BD;
-            --text-main: #2D3436; 
-            --text-done: #D1D1D1;
-            --line: #E0E0E0;
+            --bg-page: #FDFBF7; --primary: #4A69BD; --text-main: #1A1A1A; 
+            --text-done: #D1D1D1; --line: #E0E0E0; --accent: #EE5253;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            margin: 0; font-family: "PingFang SC", sans-serif;
-            background-color: var(--bg-page); color: var(--text-main);
-            height: 100vh; overflow: hidden; display: flex; justify-content: center;
-        }
-
+        body { margin: 0; font-family: "PingFang SC", "Helvetica Neue", sans-serif; background-color: var(--bg-page); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; justify-content: center; }
         .app-container { width: 100%; max-width: 500px; height: 100%; display: flex; flex-direction: column; position: relative; }
         .page { position: absolute; width: 100%; height: 100%; padding: 20px; display: none; flex-direction: column; }
         .page.active { display: flex; animation: pageIn 0.3s ease-out; }
-        @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pageIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
-        /* 导航 */
+        /* 对战状态栏 */
+        #duel-status-bar { display: none; background: white; padding: 10px 15px; border-radius: 12px; margin-bottom: 10px; border: 1.5px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .progress-track { height: 6px; background: #EEE; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+        #opp-progress-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }
+
         .nav { display: flex; justify-content: space-between; align-items: center; height: 60px; z-index: 100; }
         .btn-icon { width: 44px; height: 44px; border-radius: 12px; background: white; border: 1.5px solid #DDD; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-icon svg { width: 22px; height: 22px; stroke: #333; stroke-width: 2.5; fill: none; }
-
-        /* 游戏台 */
         .stage-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; }
         #stage-container { position: relative; width: 360px; height: 360px; }
 
-        /* 元素样式 */
-        .grid-item, .honey-item {
-            position: absolute; display: flex; justify-content: center; align-items: center;
-            background: white; border: 2.5px solid #EEE; font-weight: 900; cursor: pointer; 
-        }
+        /* 游戏样式 */
+        .grid-item, .honey-item { position: absolute; display: flex; justify-content: center; align-items: center; background: white; border: 2px solid #EEE; font-weight: 900; cursor: pointer; }
         .grid-item { border-radius: 12px; }
         .honey-item { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
-
-        /* SVG 样式 */
         .sector-path { stroke: var(--line); stroke-width: 1.2; fill: white; cursor: pointer; }
         .digit-text { font-weight: 900; font-size: 20px; pointer-events: none; user-select: none; }
-
-        /* 状态控制 */
         .cell-done { background: #F2F2F2 !important; color: #CCC !important; border: none !important; opacity: 0.6; pointer-events: none; }
         .sector-done { fill: #F2F2F2 !important; }
         .text-done { fill: #CCCCCC !important; opacity: 0.5; }
 
-        /* UI 列表 */
-        .lvl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; overflow-y: auto; padding-bottom: 20px; }
-        .lvl-card { background: white; border-radius: 18px; aspect-ratio: 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #EEE; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .lvl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; overflow-y: auto; }
+        .lvl-card { background: white; border-radius: 18px; aspect-ratio: 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #EEE; }
         .lvl-card.current { border-color: var(--primary); background: #F5F9FF; }
         .lvl-card.locked { opacity: 0.3; filter: grayscale(1); cursor: default; }
-
-        .btn-action { background: var(--primary); color: white; border: none; padding: 15px 50px; border-radius: 15px; font-weight: 700; cursor: pointer; }
+        .btn-action { background: var(--primary); color: white; border: none; padding: 15px 50px; border-radius: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; }
         .modal-mask { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal { background: white; width: 85%; max-width: 320px; padding: 30px; border-radius: 30px; text-align: center; }
+        .modal { background: white; width: 85%; padding: 30px; border-radius: 30px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #EEE; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
+    <!-- 1. 首页 -->
     <div id="page-home" class="page active">
         <div style="margin-top: 100px; text-align: center;">
-            <h1 style="letter-spacing: 3px; color: var(--primary); margin:0;">Schulte Lab</h1>
-            <p style="color: #888; font-size: 14px; margin-top: 10px;">线性阶梯 · 彩色干扰 18 级</p>
+            <h1 style="letter-spacing: 3px; color: var(--primary); margin:0; font-size: 36px;">Schulte Lab</h1>
+            <p style="color: #888; font-size: 14px; margin-top: 10px;">18 级线性阶梯 · 实时对战版</p>
         </div>
-        <button class="btn-action" style="margin: auto auto 80px; width: 220px;" onclick="showPage('page-levels')">进入实验</button>
+        <div style="margin-top: auto; margin-bottom: 60px; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+            <button class="btn-action" style="width: 220px;" onclick="showPage('page-levels')">进入实验</button>
+            <button class="btn-action" style="width: 220px; background: #2D3436;" onclick="openDuelMenu()">实时对战模式</button>
+        </div>
     </div>
 
+    <!-- 2. 关卡页 -->
     <div id="page-levels" class="page">
         <div class="nav">
             <button class="btn-icon" onclick="showPage('page-home')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
@@ -82,44 +76,80 @@
         <div class="lvl-grid" id="lvl-list"></div>
     </div>
 
+    <!-- 3. 游戏页 -->
     <div id="page-game" class="page">
         <div class="nav">
-            <button class="btn-icon" onclick="showPage('page-levels')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="btn-icon" onclick="quitDuel()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
             <div style="text-align: center;">
                 <div id="game-info" style="font-size: 10px; font-weight: 800; color: #BBB;">STAGE 01</div>
                 <div style="font-weight: 900; font-size: 20px;">目标: <span id="target-num" style="color:var(--primary)">1</span></div>
             </div>
             <button class="btn-icon" onclick="initStage()"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
         </div>
-        <div class="stage-wrapper">
-            <div id="stage-container"></div>
+
+        <div id="duel-status-bar">
+            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold;">
+                <span id="room-display">房间: ----</span>
+                <span id="opp-label" style="color:var(--accent)">对手进度: 0/0</span>
+            </div>
+            <div class="progress-track"><div id="opp-progress-fill"></div></div>
         </div>
-        <div id="game-timer" style="text-align: center; font-weight: 800; color: #CCC; padding-bottom: 30px; font-size: 20px;">0.0s</div>
+
+        <div class="stage-wrapper"><div id="stage-container"></div></div>
+        <div id="game-timer" style="text-align: center; font-weight: 800; color: #CCC; padding-bottom: 30px; font-size: 22px;">0.0s</div>
     </div>
 
+    <!-- 对战菜单 -->
+    <div id="duel-menu" class="modal-mask">
+        <div class="modal">
+            <h2 style="color:var(--primary); margin:0;">实时对战</h2>
+            <p style="font-size:12px; color:#888;">输入 4 位房间号进入房间</p>
+            <input type="number" id="room-input" placeholder="输入 4 位房间号">
+            <div style="display:flex; gap:10px;">
+                <button class="btn-action" style="flex:1;" onclick="startDuelMode('host')">创建房间</button>
+                <button class="btn-action" style="flex:1; background:#2D3436;" onclick="startDuelMode('join')">加入好友</button>
+            </div>
+            <button class="btn-action" style="background:none; color:#888;" onclick="closeDuelMenu()">返回</button>
+        </div>
+    </div>
+
+    <!-- 结算弹窗 -->
     <div id="modal-mask" class="modal-mask">
         <div class="modal">
-            <h2 style="margin:0; color:var(--primary)">关卡完成</h2>
+            <h2 id="res-title" style="margin:0; color:var(--primary)">挑战成功</h2>
             <div id="res-time" style="font-size: 44px; font-weight: 900; margin: 15px 0;">0.0s</div>
-            <button class="btn-action" style="width: 100%;" onclick="handleNextLvl()">解锁下一级</button>
+            <p id="duel-res-msg" style="font-size:12px; color:var(--accent); font-weight:bold;"></p>
+            <button class="btn-action" style="width: 100%;" onclick="handleNextLvl()">确定</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 调优后的彩色抗干扰色库
-    const INTERFERENCE_COLORS = ['#2D3436', '#4A69BD', '#10AC84', '#EE5253', '#F39C12', '#8E44AD', '#0ABDE3', '#01a3a4'];
+    // ================== 后台配置 ==================
+    const firebaseConfig = {
+      apiKey: "AIzaSyD0jjZkvMfgnCsQ-J0eYGFrglzgZ8pprxA",
+      authDomain: "schulte-duel.firebaseapp.com",
+      databaseURL: "https://schulte-duel-default-rtdb.firebaseio.com",
+      projectId: "schulte-duel",
+      storageBucket: "schulte-duel.firebasestorage.app",
+      messagingSenderId: "156983530985",
+      appId: "1:156983530985:web:35da7d34b1b45755402778"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    // ==============================================
 
+    const INTERFERENCE_COLORS = ['#2D3436', '#4A69BD', '#10AC84', '#EE5253', '#F39C12', '#8E44AD', '#0ABDE3', '#01a3a4'];
     const LEVELS = [
         { id: 1,  size: 9,  type: 'grid',  colorMode: false, name: '基础 3x3' },
-        { id: 2,  size: 16, type: 'grid',  colorMode: false, name: '标准 4x4' },
-        { id: 3,  size: 16, type: 'grid',  colorMode: true,  name: '色彩干扰' },
-        { id: 4,  size: 7,  type: 'honey', colorMode: false, name: '蜂巢初探' },
+        { id: 2,  size: 12, type: 'grid',  colorMode: false, name: '基础 3x4' },
+        { id: 3,  size: 16, type: 'grid',  colorMode: true,  name: '标准 4x4 彩色' },
+        { id: 4,  size: 7,  type: 'honey', colorMode: false, name: '蜂巢初级' },
         { id: 5,  size: 8,  type: 'circle',colorMode: false, name: '动态单环', config: [8] },
-        { id: 6,  size: 20, type: 'grid',  colorMode: true,  name: '广域彩色' },
-        { id: 7,  size: 19, type: 'honey', colorMode: true,  name: '蜂巢搜索' },
+        { id: 6,  size: 20, type: 'grid',  colorMode: true,  name: '进阶 4x5' },
+        { id: 7,  size: 19, type: 'honey', colorMode: true,  name: '蜂巢中级' },
         { id: 8,  size: 25, type: 'grid',  colorMode: false, name: '标准 5x5' },
-        { id: 9,  size: 25, type: 'grid',  colorMode: true,  name: '专业彩色' },
+        { id: 9,  size: 25, type: 'grid',  colorMode: true,  name: '专业 5x5 彩色' },
         { id: 10, size: 18, type: 'circle',colorMode: true,  name: '双环追踪', config: [6, 12] },
         { id: 11, size: 30, type: 'grid',  colorMode: true,  name: '密集扫描' },
         { id: 12, size: 25, type: 'circle',colorMode: true,  name: '三层视域', config: [6, 9, 10] },
@@ -127,14 +157,14 @@
         { id: 14, size: 30, type: 'circle',colorMode: true,  name: '动态风暴', config: [6, 10, 14] },
         { id: 15, size: 37, type: 'honey', colorMode: true,  name: '巅峰蜂巢' },
         { id: 16, size: 42, type: 'circle',colorMode: true,  name: '追踪大师', config: [8, 14, 20] },
-        { id: 17, size: 49, type: 'grid',  colorMode: true,  name: '上帝视角' },
-        { id: 18, size: 64, type: 'grid',  colorMode: true,  name: '巅峰挑战' }
+        { id: 17, size: 49, type: 'grid',  colorMode: true,  name: '挑战 7x7' },
+        { id: 18, size: 64, type: 'grid',  colorMode: true,  name: '巅峰 8x8' }
     ];
 
-    let unlockedLvl = parseInt(localStorage.getItem('schulte_v18_color')) || 1;
-    let activeLvl = null, target = 1, gameT = null, timerInt = null, animRef = null;
-    let circleItems = [];
-    let animT = null;
+    let unlockedLvl = parseInt(localStorage.getItem('schulte_v18_final')) || 1;
+    let activeLvl = LEVELS[0], target = 1, gameT = null, timerInt = null, animRef = null;
+    let circleItems = [], animT = null;
+    let isDuel = false, myRole = "", curRoomId = "";
 
     function showPage(id) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -144,53 +174,82 @@
     }
 
     function renderLevels() {
-        const list = document.getElementById('lvl-list');
-        list.innerHTML = '';
+        const list = document.getElementById('lvl-list'); list.innerHTML = '';
         LEVELS.forEach(lvl => {
-            const isUnlocked = lvl.id <= unlockedLvl;
+            const isLocked = lvl.id > unlockedLvl;
             const div = document.createElement('div');
-            div.className = `lvl-card ${isUnlocked ? '' : 'locked'} ${lvl.id === unlockedLvl ? 'current' : ''}`;
+            div.className = `lvl-card ${isLocked ? 'locked' : ''} ${lvl.id === unlockedLvl ? 'current' : ''}`;
             div.innerHTML = `<div style="font-size:24px; font-weight:800; color:var(--primary)">${lvl.id}</div><div style="font-size:10px; margin-top:4px; font-weight:bold;">${lvl.name}</div>`;
-            if(isUnlocked) div.onclick = () => { activeLvl = lvl; showPage('page-game'); initStage(); };
+            if(!isLocked) div.onclick = () => { activeLvl = lvl; showPage('page-game'); initStage(); };
             list.appendChild(div);
         });
     }
 
+    function openDuelMenu() { document.getElementById('duel-menu').style.display = 'flex'; }
+    function closeDuelMenu() { document.getElementById('duel-menu').style.display = 'none'; }
+
+    function startDuelMode(role) {
+        const rid = document.getElementById('room-input').value;
+        if(!rid || rid.length < 2) { alert("请输入有效的房间号"); return; }
+        myRole = role; curRoomId = rid; isDuel = true;
+        closeDuelMenu();
+        document.getElementById('duel-status-bar').style.display = 'block';
+        document.getElementById('room-display').innerText = `房间: ${rid}`;
+        
+        const oppRole = (myRole === 'host') ? 'guest' : 'host';
+        db.ref(`rooms/${rid}/${oppRole}`).on('value', snap => {
+            const val = snap.val();
+            if(val && val.progress !== undefined) {
+                const perc = (val.progress / activeLvl.size) * 100;
+                document.getElementById('opp-progress-fill').style.width = perc + '%';
+                document.getElementById('opp-label').innerText = `对手进度: ${val.progress}/${activeLvl.size}`;
+                if(val.progress >= activeLvl.size) { alert("对手率先完成！你输了 ⚔️"); quitDuel(); }
+            }
+        });
+
+        if(role === 'host') {
+            db.ref(`rooms/${rid}`).set({ lvlId: activeLvl.id, host: {progress:0}, guest: {progress:0} });
+            initStage();
+        } else {
+            db.ref(`rooms/${rid}/lvlId`).once('value', s => {
+                activeLvl = LEVELS.find(l => l.id == (s.val() || 1));
+                initStage();
+            });
+        }
+        showPage('page-game');
+    }
+
+    function quitDuel() {
+        if(isDuel) db.ref(`rooms/${curRoomId}`).off();
+        isDuel = false;
+        document.getElementById('duel-status-bar').style.display = 'none';
+        showPage('page-levels');
+    }
+
     function initStage() {
-        const container = document.getElementById('stage-container');
-        container.innerHTML = '';
+        const container = document.getElementById('stage-container'); container.innerHTML = '';
         target = 1; gameT = null; animT = null; circleItems = [];
         document.getElementById('target-num').innerText = target;
         document.getElementById('game-timer').innerText = "0.0s";
         document.getElementById('game-info').innerText = `STAGE ${activeLvl.id < 10 ? '0'+activeLvl.id : activeLvl.id} - ${activeLvl.name}`;
+        if(isDuel) db.ref(`rooms/${curRoomId}/${myRole}`).update({progress: 0});
         clearInterval(timerInt); cancelAnimationFrame(animRef);
 
         const nums = Array.from({length: activeLvl.size}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
-
         if(activeLvl.type === 'grid') renderGrid(nums);
         else if(activeLvl.type === 'honey') renderHoney(nums);
         else if(activeLvl.type === 'circle') renderCircle(nums);
     }
 
-    function getNumColor(n) {
-        if(!activeLvl.colorMode) return '#1A1A1A';
-        return INTERFERENCE_COLORS[n % INTERFERENCE_COLORS.length];
-    }
+    function getNumColor(n) { return activeLvl.colorMode ? INTERFERENCE_COLORS[n % INTERFERENCE_COLORS.length] : '#1A1A1A'; }
 
     function renderGrid(nums) {
         const stage = document.getElementById('stage-container');
-        let cols = Math.ceil(Math.sqrt(activeLvl.size));
-        if(activeLvl.size === 12) cols = 4;
+        let cols = Math.ceil(Math.sqrt(activeLvl.size)); if(activeLvl.size === 12) cols = 4;
         const cellSize = 360 / cols;
         nums.forEach((n, i) => {
-            const el = document.createElement('div');
-            el.className = 'grid-item';
-            el.innerText = n;
-            el.style.width = el.style.height = (cellSize - 6) + 'px';
-            el.style.left = (i % cols) * cellSize + 'px';
-            el.style.top = Math.floor(i / cols) * cellSize + 'px';
-            el.style.fontSize = (cellSize * 0.45) + 'px';
-            el.style.color = getNumColor(n);
+            const el = document.createElement('div'); el.className = 'grid-item'; el.innerText = n;
+            el.style = `width:${cellSize-6}px; height:${cellSize-6}px; left:${(i%cols)*cellSize}px; top:${Math.floor(i/cols)*cellSize}px; font-size:${cellSize*0.45}px; color:${getNumColor(n)};`;
             el.onmousedown = el.ontouchstart = (e) => { e.preventDefault(); handleHit(n, el); };
             stage.appendChild(el);
         });
@@ -198,18 +257,11 @@
 
     function renderHoney(nums) {
         const stage = document.getElementById('stage-container');
-        const cols = Math.ceil(Math.sqrt(activeLvl.size));
-        const unit = 360 / cols;
+        const cols = Math.ceil(Math.sqrt(activeLvl.size)); const unit = 360 / cols;
         nums.forEach((n, i) => {
-            const el = document.createElement('div');
-            el.className = 'honey-item';
-            el.innerText = n;
-            const r = Math.floor(i / cols), c = i % cols;
-            el.style.width = el.style.height = unit + 'px';
-            el.style.left = c * unit + (r % 2 * unit / 2) + 'px';
-            el.style.top = r * (unit * 0.85) + 'px';
-            el.style.fontSize = (unit * 0.38) + 'px';
-            el.style.color = getNumColor(n);
+            const el = document.createElement('div'); el.className = 'honey-item'; el.innerText = n;
+            const r = Math.floor(i/cols), c = i%cols;
+            el.style = `width:${unit}px; height:${unit}px; left:${c*unit+(r%2*unit/2)}px; top:${r*unit*0.85}px; font-size:${unit*0.38}px; color:${getNumColor(n)};`;
             el.onmousedown = el.ontouchstart = (e) => { e.preventDefault(); handleHit(n, el); };
             stage.appendChild(el);
         });
@@ -218,47 +270,21 @@
     function renderCircle(nums) {
         const stage = document.getElementById('stage-container');
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("viewBox", "0 0 360 360");
-        svg.style.width = "100%"; svg.style.height = "100%";
+        svg.setAttribute("viewBox", "0 0 360 360"); svg.style.width = svg.style.height = "100%";
         stage.appendChild(svg);
-
-        const config = activeLvl.config;
-        let curIdx = 0;
+        const config = activeLvl.config; let curIdx = 0;
         config.forEach((count, ringIdx) => {
-            const bgG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            svg.appendChild(bgG);
-            const outR = [65, 125, 180][ringIdx], inR = [0, 65, 125][ringIdx];
-            const duration = [20, 30, 40][ringIdx];
-            const dir = ringIdx % 2 === 0 ? 1 : -1;
-
+            const outR = [65, 125, 180][ringIdx], inR = [0, 65, 125][ringIdx], dur = [20, 30, 40][ringIdx], dir = ringIdx % 2 === 0 ? 1 : -1;
             for(let i=0; i<count; i++) {
-                const n = nums[curIdx++];
-                const sOffset = (i/count)*Math.PI*2, eOffset = ((i+1)/count)*Math.PI*2;
-                
-                const sectorG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("class", "sector-path");
-                sectorG.appendChild(path);
-
-                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                text.setAttribute("class", "digit-text");
-                text.setAttribute("text-anchor", "middle");
-                text.setAttribute("dominant-baseline", "central");
-                text.style.fill = getNumColor(n);
-                text.textContent = n;
+                const n = nums[curIdx++], sO = (i/count)*Math.PI*2, eO = ((i+1)/count)*Math.PI*2;
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path"); path.setAttribute("class", "sector-path");
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text"); text.setAttribute("class", "digit-text");
+                text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+                text.style.fill = getNumColor(n); text.textContent = n;
                 svg.appendChild(text);
-
-                const item = {
-                    n, path, text, dir, 
-                    radius: (inR + outR) / 2,
-                    angleBase: (sOffset + eOffset) / 2,
-                    speed: (Math.PI*2) / (duration * 1000),
-                    inR, outR, sO: sOffset, eO: eOffset
-                };
-                
-                sectorG.onmousedown = sectorG.ontouchstart = (e) => { e.preventDefault(); handleHit(n, path, text); };
-                bgG.appendChild(sectorG);
-                circleItems.push(item);
+                const item = { n, path, text, dir, radius:(inR+outR)/2, angleBase:(sO+eO)/2, speed:(Math.PI*2)/(dur*1000), inR, outR, sO, eO };
+                path.onmousedown = path.ontouchstart = (e) => { e.preventDefault(); handleHit(n, path, text); };
+                svg.appendChild(path); circleItems.push(item);
             }
         });
         animRef = requestAnimationFrame(animate);
@@ -266,57 +292,22 @@
 
     function animate(ts) {
         if(!animT) animT = ts;
-        const elapsed = ts - animT;
         circleItems.forEach(item => {
-            const curA = item.angleBase + (item.dir * item.speed * elapsed);
+            const curA = item.angleBase + (item.dir * item.speed * (ts - animT));
             item.text.setAttribute("x", 180 + item.radius * Math.cos(curA));
-            item.text.setAttribute("y", 180 + item.radius * Math.sin(currentA = curA));
-            const sa = item.sO + (item.dir * item.speed * elapsed);
-            const ea = item.eO + (item.dir * item.speed * elapsed);
-            item.path.setAttribute("d", genPath(180, 180, item.inR, item.outR, sa, ea));
+            item.text.setAttribute("y", 180 + item.radius * Math.sin(curA));
+            const sa = item.sO + (item.dir * item.speed * (ts - animT)), ea = item.eO + (item.dir * item.speed * (ts - animT));
+            item.path.setAttribute("d", `M ${180+item.outR*Math.cos(sa)} ${180+item.outR*Math.sin(sa)} A ${item.outR} ${item.outR} 0 0 1 ${180+item.outR*Math.cos(ea)} ${180+item.outR*Math.sin(ea)} L ${180+item.inR*Math.cos(ea)} ${180+item.inR*Math.sin(ea)} A ${item.inR} ${item.inR} 0 0 0 ${180+item.inR*Math.cos(sa)} ${180+item.inR*Math.sin(sa)} Z`);
         });
         animRef = requestAnimationFrame(animate);
-    }
-
-    function genPath(cx, cy, ri, ro, sa, ea) {
-        const x1 = cx + ro*Math.cos(sa), y1 = cy + ro*Math.sin(sa);
-        const x2 = cx + ro*Math.cos(ea), y2 = cy + ro*Math.sin(ea);
-        const x3 = cx + ri*Math.cos(ea), y3 = cy + ri*Math.sin(ea);
-        const x4 = cx + ri*Math.cos(sa), y4 = cy + ri*Math.sin(sa);
-        return `M ${x1} ${y1} A ${ro} ${ro} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${ri} ${ri} 0 0 0 ${x4} ${y4} Z`;
     }
 
     function handleHit(n, el, txt) {
         if(!gameT) {
             gameT = Date.now();
-            timerInt = setInterval(() => {
-                document.getElementById('game-timer').innerText = ((Date.now() - gameT)/1000).toFixed(1) + "s";
-            }, 100);
+            timerInt = setInterval(() => { document.getElementById('game-timer').innerText = ((Date.now()-gameT)/1000).toFixed(1) + "s"; }, 100);
         }
         if(n === target) {
             if(txt) { el.classList.add('sector-done'); txt.classList.add('text-done'); }
             else el.classList.add('cell-done');
-            target++;
-            if(target > activeLvl.size) { clearInterval(timerInt); cancelAnimationFrame(animRef); showRes(); }
-            else document.getElementById('target-num').innerText = target;
-        }
-    }
-
-    function showRes() {
-        document.getElementById('res-time').innerText = document.getElementById('game-timer').innerText;
-        document.getElementById('modal-mask').style.display = 'flex';
-        if(activeLvl.id === unlockedLvl && unlockedLvl < 18) {
-            unlockedLvl++; localStorage.setItem('schulte_v18_color', unlockedLvl);
-        }
-    }
-
-    function handleNextLvl() {
-        document.getElementById('modal-mask').style.display = 'none';
-        if(activeLvl.id < 18) { activeLvl = LEVELS[activeLvl.id]; initStage(); }
-        else showPage('page-levels');
-    }
-
-    showPage('page-home');
-</script>
-</body>
-</html>
+            if(isDuel)
