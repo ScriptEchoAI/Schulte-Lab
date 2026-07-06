@@ -310,4 +310,28 @@
         if(n === target) {
             if(txt) { el.classList.add('sector-done'); txt.classList.add('text-done'); }
             else el.classList.add('cell-done');
-            if(isDuel)
+            if(isDuel) db.ref(`rooms/${curRoomId}/${myRole}`).update({progress: target});
+            target++;
+            if(target > activeLvl.size) { clearInterval(timerInt); cancelAnimationFrame(animRef); showRes(); }
+            else document.getElementById('target-num').innerText = target;
+        }
+    }
+
+    function showRes() {
+        document.getElementById('res-time').innerText = document.getElementById('game-timer').innerText;
+        document.getElementById('duel-res-msg').innerText = isDuel ? "🏆 恭喜！你赢得了这场对战！" : "";
+        document.getElementById('modal-mask').style.display = 'flex';
+        if(!isDuel && activeLvl.id === unlockedLvl && unlockedLvl < 18) { unlockedLvl++; localStorage.setItem('schulte_v18_final', unlockedLvl); }
+    }
+
+    function handleNextLvl() {
+        document.getElementById('modal-mask').style.display = 'none';
+        if(isDuel) { quitDuel(); }
+        else if(activeLvl.id < 18) { activeLvl = LEVELS[activeLvl.id]; initStage(); }
+        else showPage('page-levels');
+    }
+
+    showPage('page-home');
+</script>
+</body>
+</html>
