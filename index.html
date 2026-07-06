@@ -4,34 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Schulte Lab | 实时对战实验室</title>
-    <!-- 引入 Firebase 核心库 -->
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database-compat.js"></script>
     <style>
-        :root {
-            --bg-page: #FDFBF7; --primary: #4A69BD; --text-main: #1A1A1A; 
-            --text-done: #D1D1D1; --line: #E0E0E0; --accent: #EE5253;
-        }
-
+        :root { --bg-page: #FDFBF7; --primary: #4A69BD; --text-main: #2D3436; --text-done: #D1D1D1; --line: #E0E0E0; --accent: #EE5253; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: "PingFang SC", "Helvetica Neue", sans-serif; background-color: var(--bg-page); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; justify-content: center; }
+        body { margin: 0; font-family: "PingFang SC", sans-serif; background-color: var(--bg-page); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; justify-content: center; }
         .app-container { width: 100%; max-width: 500px; height: 100%; display: flex; flex-direction: column; position: relative; }
         .page { position: absolute; width: 100%; height: 100%; padding: 20px; display: none; flex-direction: column; }
         .page.active { display: flex; animation: pageIn 0.3s ease-out; }
         @keyframes pageIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-
-        /* 对战状态栏 */
         #duel-status-bar { display: none; background: white; padding: 10px 15px; border-radius: 12px; margin-bottom: 10px; border: 1.5px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .progress-track { height: 6px; background: #EEE; border-radius: 3px; margin-top: 5px; overflow: hidden; }
         #opp-progress-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }
-
         .nav { display: flex; justify-content: space-between; align-items: center; height: 60px; z-index: 100; }
         .btn-icon { width: 44px; height: 44px; border-radius: 12px; background: white; border: 1.5px solid #DDD; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-icon svg { width: 22px; height: 22px; stroke: #333; stroke-width: 2.5; fill: none; }
         .stage-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; }
         #stage-container { position: relative; width: 360px; height: 360px; }
-
-        /* 游戏样式 */
         .grid-item, .honey-item { position: absolute; display: flex; justify-content: center; align-items: center; background: white; border: 2px solid #EEE; font-weight: 900; cursor: pointer; }
         .grid-item { border-radius: 12px; }
         .honey-item { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
@@ -40,7 +30,6 @@
         .cell-done { background: #F2F2F2 !important; color: #CCC !important; border: none !important; opacity: 0.6; pointer-events: none; }
         .sector-done { fill: #F2F2F2 !important; }
         .text-done { fill: #CCCCCC !important; opacity: 0.5; }
-
         .lvl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; overflow-y: auto; }
         .lvl-card { background: white; border-radius: 18px; aspect-ratio: 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #EEE; }
         .lvl-card.current { border-color: var(--primary); background: #F5F9FF; }
@@ -54,11 +43,10 @@
 <body>
 
 <div class="app-container">
-    <!-- 1. 首页 -->
     <div id="page-home" class="page active">
         <div style="margin-top: 100px; text-align: center;">
             <h1 style="letter-spacing: 3px; color: var(--primary); margin:0; font-size: 36px;">Schulte Lab</h1>
-            <p style="color: #888; font-size: 14px; margin-top: 10px;">18 级线性阶梯 · 实时对战版</p>
+            <p style="color: #888; font-size: 14px; margin-top: 10px;">18 级彩色干扰 · 实时对战版</p>
         </div>
         <div style="margin-top: auto; margin-bottom: 60px; display: flex; flex-direction: column; gap: 10px; align-items: center;">
             <button class="btn-action" style="width: 220px;" onclick="showPage('page-levels')">进入实验</button>
@@ -66,7 +54,6 @@
         </div>
     </div>
 
-    <!-- 2. 关卡页 -->
     <div id="page-levels" class="page">
         <div class="nav">
             <button class="btn-icon" onclick="showPage('page-home')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
@@ -76,7 +63,6 @@
         <div class="lvl-grid" id="lvl-list"></div>
     </div>
 
-    <!-- 3. 游戏页 -->
     <div id="page-game" class="page">
         <div class="nav">
             <button class="btn-icon" onclick="quitDuel()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
@@ -86,7 +72,6 @@
             </div>
             <button class="btn-icon" onclick="initStage()"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
         </div>
-
         <div id="duel-status-bar">
             <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold;">
                 <span id="room-display">房间: ----</span>
@@ -94,12 +79,10 @@
             </div>
             <div class="progress-track"><div id="opp-progress-fill"></div></div>
         </div>
-
         <div class="stage-wrapper"><div id="stage-container"></div></div>
         <div id="game-timer" style="text-align: center; font-weight: 800; color: #CCC; padding-bottom: 30px; font-size: 22px;">0.0s</div>
     </div>
 
-    <!-- 对战菜单 -->
     <div id="duel-menu" class="modal-mask">
         <div class="modal">
             <h2 style="color:var(--primary); margin:0;">实时对战</h2>
@@ -113,7 +96,6 @@
         </div>
     </div>
 
-    <!-- 结算弹窗 -->
     <div id="modal-mask" class="modal-mask">
         <div class="modal">
             <h2 id="res-title" style="margin:0; color:var(--primary)">挑战成功</h2>
@@ -125,7 +107,6 @@
 </div>
 
 <script>
-    // ================== 后台配置 ==================
     const firebaseConfig = {
       apiKey: "AIzaSyD0jjZkvMfgnCsQ-J0eYGFrglzgZ8pprxA",
       authDomain: "schulte-duel.firebaseapp.com",
@@ -137,7 +118,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    // ==============================================
 
     const INTERFERENCE_COLORS = ['#2D3436', '#4A69BD', '#10AC84', '#EE5253', '#F39C12', '#8E44AD', '#0ABDE3', '#01a3a4'];
     const LEVELS = [
@@ -178,9 +158,9 @@
         LEVELS.forEach(lvl => {
             const isLocked = lvl.id > unlockedLvl;
             const div = document.createElement('div');
-            div.className = `lvl-card ${isLocked ? 'locked' : ''} ${lvl.id === unlockedLvl ? 'current' : ''}`;
-            div.innerHTML = `<div style="font-size:24px; font-weight:800; color:var(--primary)">${lvl.id}</div><div style="font-size:10px; margin-top:4px; font-weight:bold;">${lvl.name}</div>`;
-            if(!isLocked) div.onclick = () => { activeLvl = lvl; showPage('page-game'); initStage(); };
+            div.className = "lvl-card " + (isLocked ? "locked" : "") + " " + (lvl.id === unlockedLvl ? "current" : "");
+            div.innerHTML = "<div style='font-size:24px; font-weight:800; color:var(--primary)'>" + lvl.id + "</div><div style='font-size:10px; margin-top:4px; font-weight:bold;'>" + lvl.name + "</div>";
+            if(!isLocked) div.onclick = function() { activeLvl = lvl; showPage('page-game'); initStage(); };
             list.appendChild(div);
         });
     }
@@ -194,25 +174,26 @@
         myRole = role; curRoomId = rid; isDuel = true;
         closeDuelMenu();
         document.getElementById('duel-status-bar').style.display = 'block';
-        document.getElementById('room-display').innerText = `房间: ${rid}`;
+        document.getElementById('room-display').innerText = "房间: " + rid;
         
         const oppRole = (myRole === 'host') ? 'guest' : 'host';
-        db.ref(`rooms/${rid}/${oppRole}`).on('value', snap => {
+        db.ref("rooms/" + rid + "/" + oppRole).on('value', snap => {
             const val = snap.val();
             if(val && val.progress !== undefined) {
                 const perc = (val.progress / activeLvl.size) * 100;
                 document.getElementById('opp-progress-fill').style.width = perc + '%';
-                document.getElementById('opp-label').innerText = `对手进度: ${val.progress}/${activeLvl.size}`;
+                document.getElementById('opp-label').innerText = "对手进度: " + val.progress + "/" + activeLvl.size;
                 if(val.progress >= activeLvl.size) { alert("对手率先完成！你输了 ⚔️"); quitDuel(); }
             }
         });
 
         if(role === 'host') {
-            db.ref(`rooms/${rid}`).set({ lvlId: activeLvl.id, host: {progress:0}, guest: {progress:0} });
+            db.ref("rooms/" + rid).set({ lvlId: activeLvl.id, host: {progress:0}, guest: {progress:0} });
             initStage();
         } else {
-            db.ref(`rooms/${rid}/lvlId`).once('value', s => {
-                activeLvl = LEVELS.find(l => l.id == (s.val() || 1));
+            db.ref("rooms/" + rid + "/lvlId").once('value', s => {
+                const lid = s.val() || 1;
+                activeLvl = LEVELS.find(function(l){ return l.id == lid; });
                 initStage();
             });
         }
@@ -220,7 +201,7 @@
     }
 
     function quitDuel() {
-        if(isDuel) db.ref(`rooms/${curRoomId}`).off();
+        if(isDuel) db.ref("rooms/" + curRoomId).off();
         isDuel = false;
         document.getElementById('duel-status-bar').style.display = 'none';
         showPage('page-levels');
@@ -231,11 +212,10 @@
         target = 1; gameT = null; animT = null; circleItems = [];
         document.getElementById('target-num').innerText = target;
         document.getElementById('game-timer').innerText = "0.0s";
-        document.getElementById('game-info').innerText = `STAGE ${activeLvl.id < 10 ? '0'+activeLvl.id : activeLvl.id} - ${activeLvl.name}`;
-        if(isDuel) db.ref(`rooms/${curRoomId}/${myRole}`).update({progress: 0});
+        document.getElementById('game-info').innerText = "STAGE " + (activeLvl.id < 10 ? '0'+activeLvl.id : activeLvl.id) + " - " + activeLvl.name;
+        if(isDuel) db.ref("rooms/" + curRoomId + "/" + myRole).update({progress: 0});
         clearInterval(timerInt); cancelAnimationFrame(animRef);
-
-        const nums = Array.from({length: activeLvl.size}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+        const nums = Array.from({length: activeLvl.size}, function(_, i) { return i + 1; }).sort(function() { return Math.random() - 0.5; });
         if(activeLvl.type === 'grid') renderGrid(nums);
         else if(activeLvl.type === 'honey') renderHoney(nums);
         else if(activeLvl.type === 'circle') renderCircle(nums);
@@ -247,10 +227,10 @@
         const stage = document.getElementById('stage-container');
         let cols = Math.ceil(Math.sqrt(activeLvl.size)); if(activeLvl.size === 12) cols = 4;
         const cellSize = 360 / cols;
-        nums.forEach((n, i) => {
+        nums.forEach(function(n, i) {
             const el = document.createElement('div'); el.className = 'grid-item'; el.innerText = n;
-            el.style = `width:${cellSize-6}px; height:${cellSize-6}px; left:${(i%cols)*cellSize}px; top:${Math.floor(i/cols)*cellSize}px; font-size:${cellSize*0.45}px; color:${getNumColor(n)};`;
-            el.onmousedown = el.ontouchstart = (e) => { e.preventDefault(); handleHit(n, el); };
+            el.setAttribute("style", "width:"+(cellSize-6)+"px; height:"+(cellSize-6)+"px; left:"+((i%cols)*cellSize)+"px; top:"+(Math.floor(i/cols)*cellSize)+"px; font-size:"+(cellSize*0.45)+"px; color:"+getNumColor(n)+";");
+            el.onmousedown = el.ontouchstart = function(e) { e.preventDefault(); handleHit(n, el); };
             stage.appendChild(el);
         });
     }
@@ -258,11 +238,11 @@
     function renderHoney(nums) {
         const stage = document.getElementById('stage-container');
         const cols = Math.ceil(Math.sqrt(activeLvl.size)); const unit = 360 / cols;
-        nums.forEach((n, i) => {
+        nums.forEach(function(n, i) {
             const el = document.createElement('div'); el.className = 'honey-item'; el.innerText = n;
             const r = Math.floor(i/cols), c = i%cols;
-            el.style = `width:${unit}px; height:${unit}px; left:${c*unit+(r%2*unit/2)}px; top:${r*unit*0.85}px; font-size:${unit*0.38}px; color:${getNumColor(n)};`;
-            el.onmousedown = el.ontouchstart = (e) => { e.preventDefault(); handleHit(n, el); };
+            el.setAttribute("style", "width:"+unit+"px; height:"+unit+"px; left:"+(c*unit+(r%2*unit/2))+"px; top:"+(r*unit*0.85)+"px; font-size:"+(unit*0.38)+"px; color:"+getNumColor(n)+";");
+            el.onmousedown = el.ontouchstart = function(e) { e.preventDefault(); handleHit(n, el); };
             stage.appendChild(el);
         });
     }
@@ -273,7 +253,7 @@
         svg.setAttribute("viewBox", "0 0 360 360"); svg.style.width = svg.style.height = "100%";
         stage.appendChild(svg);
         const config = activeLvl.config; let curIdx = 0;
-        config.forEach((count, ringIdx) => {
+        config.forEach(function(count, ringIdx) {
             const outR = [65, 125, 180][ringIdx], inR = [0, 65, 125][ringIdx], dur = [20, 30, 40][ringIdx], dir = ringIdx % 2 === 0 ? 1 : -1;
             for(let i=0; i<count; i++) {
                 const n = nums[curIdx++], sO = (i/count)*Math.PI*2, eO = ((i+1)/count)*Math.PI*2;
@@ -282,8 +262,8 @@
                 text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
                 text.style.fill = getNumColor(n); text.textContent = n;
                 svg.appendChild(text);
-                const item = { n, path, text, dir, radius:(inR+outR)/2, angleBase:(sO+eO)/2, speed:(Math.PI*2)/(dur*1000), inR, outR, sO, eO };
-                path.onmousedown = path.ontouchstart = (e) => { e.preventDefault(); handleHit(n, path, text); };
+                const item = { n:n, path:path, text:text, dir:dir, radius:(inR+outR)/2, angleBase:(sO+eO)/2, speed:(Math.PI*2)/(dur*1000), inR:inR, outR:outR, sO:sO, eO:eO };
+                path.onmousedown = path.ontouchstart = function(e) { e.preventDefault(); handleHit(n, path, text); };
                 svg.appendChild(path); circleItems.push(item);
             }
         });
@@ -292,12 +272,13 @@
 
     function animate(ts) {
         if(!animT) animT = ts;
-        circleItems.forEach(item => {
+        circleItems.forEach(function(item) {
             const curA = item.angleBase + (item.dir * item.speed * (ts - animT));
             item.text.setAttribute("x", 180 + item.radius * Math.cos(curA));
             item.text.setAttribute("y", 180 + item.radius * Math.sin(curA));
             const sa = item.sO + (item.dir * item.speed * (ts - animT)), ea = item.eO + (item.dir * item.speed * (ts - animT));
-            item.path.setAttribute("d", `M ${180+item.outR*Math.cos(sa)} ${180+item.outR*Math.sin(sa)} A ${item.outR} ${item.outR} 0 0 1 ${180+item.outR*Math.cos(ea)} ${180+item.outR*Math.sin(ea)} L ${180+item.inR*Math.cos(ea)} ${180+item.inR*Math.sin(ea)} A ${item.inR} ${item.inR} 0 0 0 ${180+item.inR*Math.cos(sa)} ${180+item.inR*Math.sin(sa)} Z`);
+            const d = "M " + (180+item.outR*Math.cos(sa)) + " " + (180+item.outR*Math.sin(sa)) + " A " + item.outR + " " + item.outR + " 0 0 1 " + (180+item.outR*Math.cos(ea)) + " " + (180+item.outR*Math.sin(ea)) + " L " + (180+item.inR*Math.cos(ea)) + " " + (180+item.inR*Math.sin(ea)) + " A " + item.inR + " " + item.inR + " 0 0 0 " + (180+item.inR*Math.cos(sa)) + " " + (180+item.inR*Math.sin(sa)) + " Z";
+            item.path.setAttribute("d", d);
         });
         animRef = requestAnimationFrame(animate);
     }
@@ -305,12 +286,12 @@
     function handleHit(n, el, txt) {
         if(!gameT) {
             gameT = Date.now();
-            timerInt = setInterval(() => { document.getElementById('game-timer').innerText = ((Date.now()-gameT)/1000).toFixed(1) + "s"; }, 100);
+            timerInt = setInterval(function() { document.getElementById('game-timer').innerText = ((Date.now()-gameT)/1000).toFixed(1) + "s"; }, 100);
         }
         if(n === target) {
             if(txt) { el.classList.add('sector-done'); txt.classList.add('text-done'); }
             else el.classList.add('cell-done');
-            if(isDuel) db.ref(`rooms/${curRoomId}/${myRole}`).update({progress: target});
+            if(isDuel) db.ref("rooms/" + curRoomId + "/" + myRole).update({progress: target});
             target++;
             if(target > activeLvl.size) { clearInterval(timerInt); cancelAnimationFrame(animRef); showRes(); }
             else document.getElementById('target-num').innerText = target;
@@ -321,7 +302,9 @@
         document.getElementById('res-time').innerText = document.getElementById('game-timer').innerText;
         document.getElementById('duel-res-msg').innerText = isDuel ? "🏆 恭喜！你赢得了这场对战！" : "";
         document.getElementById('modal-mask').style.display = 'flex';
-        if(!isDuel && activeLvl.id === unlockedLvl && unlockedLvl < 18) { unlockedLvl++; localStorage.setItem('schulte_v18_final', unlockedLvl); }
+        if(!isDuel && activeLvl.id === unlockedLvl && unlockedLvl < 18) {
+            unlockedLvl++; localStorage.setItem('schulte_v18_final', unlockedLvl);
+        }
     }
 
     function handleNextLvl() {
